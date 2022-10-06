@@ -8,9 +8,8 @@ namespace DatabaseManagement
 {
     public class SqlProductDal : IProductDal
     {
-            Product product;
+            Product product = null;
 
-            List<Product> products;
 
             private SqlConnection GetSqlConnection()
             {
@@ -27,7 +26,10 @@ namespace DatabaseManagement
             
 
             public List<Product> GetAllProducts()
+            
             {
+                List<Product> products = null;
+
                 using(var connection = GetSqlConnection())
 
                 try{
@@ -61,34 +63,34 @@ namespace DatabaseManagement
                 return products;
             }
 
-        public Product GetProductByID(int id)
-        {
+            public Product GetProductByID(int ID)
+            {
                 using(var connection = GetSqlConnection())
-
                 try{
-
                     connection.Open();
-                    string sql = "select * from products";
+                    string sql = "select * from products where ProductID= @roductID";
                     SqlCommand command = new SqlCommand(sql,connection);
+                    command.Parameters.Add("@roductID", System.Data.SqlDbType.Int).Value = ID;
+                    
+                    //The code down belown is the longer version of the upper one.
+                    // SqlParameter parameter = new SqlParameter();
+                    // parameter.ParameterName = "@roductID";
+                    // parameter.Value = ID;
+                    //command.Parameters.Add(parameter);
                     SqlDataReader read = command.ExecuteReader();
-                    product = new Product();
-                    while(read.Read()){
-                        
-                        if(id == int.Parse(read["ProductID"].ToString()))
-                        {
-                            product.ProductID = int.Parse(read["ProductID"].ToString());
-                            product.ProductName = read["ProductName"].ToString();
-                            product.ProductPrice = double.Parse(read["UnitPrice"].ToString());
-                        }
+                    read.Read();
+                    if(read.HasRows){
+                        product = new Product(){
+                        ProductID = int.Parse(read["ProductID"].ToString()),
+                        ProductName = read["ProductName"].ToString(),
+                        ProductPrice = double.Parse(read["UnitPrice"].ToString())
+                        };
                     }
                     read.Close();
-
-                    
-                
                 }
                 catch(Exception e){
 
-                    Console.WriteLine($"Error: {e} ");
+                    Console.WriteLine(e);
                 }
                 finally{
                     connection.Close();
@@ -97,25 +99,32 @@ namespace DatabaseManagement
             }
 
         public List<Product> Find(string ProductName)
+        
         {
+                List<Product> products = null;
+
                 using(var connection = GetSqlConnection())
 
                 try
                 {
 
                     connection.Open();
-                    string sql = "select * from products";
+                    string sql = "select * from products WHERE ProductName LIKE @ProductName";
                     SqlCommand command = new SqlCommand(sql,connection);
+                    command.Parameters.Add("@ProductName",System.Data.SqlDbType.NVarChar).Value = "%" + ProductName + "%";
                     SqlDataReader read = command.ExecuteReader();
+                    //read.Read();
                     products = new List<Product>();
                     while(read.Read()){
                         
-                        if(ProductName == read["ProductName"].ToString())
+                        products.Add(
+                        new Product
                         {
-                            products.Add(new Product(){ProductID = int.Parse(read["ProductID"].ToString()),
-                                        ProductName = read["ProductName"].ToString(),
-                                        ProductPrice = double.Parse(read["UnitPrice"].ToString())});
-                        }
+                            ProductID = int.Parse(read["ProductID"].ToString()),
+                            ProductName = read["ProductName"].ToString(),
+                            ProductPrice = double.Parse(read["UnitPrice"].ToString())
+                            }
+                        );
                     }
                     read.Close();
 
